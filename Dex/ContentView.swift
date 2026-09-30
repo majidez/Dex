@@ -17,6 +17,7 @@ struct ContentView: View {
     private var pokedex
     
     @State private var searchText = ""
+    @State var filterByFavorites = false
     
     let fetcher = FetchService()
     
@@ -29,6 +30,9 @@ struct ContentView: View {
         }
         
         // Filter by favorite predicate
+        if filterByFavorites {
+            predicates.append(NSPredicate(format: "favorite == %d", true))
+        }
         
         // Combine predicates
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
@@ -49,19 +53,26 @@ struct ContentView: View {
                         .frame(width: 100, height: 100)
                         
                         VStack(alignment: .leading) {
-                            Text(pokemon.name!.capitalized)
-                                .fontWeight(.bold)
-                            
                             HStack {
-                                ForEach(pokemon.types!, id: \.self) { type in
-                                    Text(type.capitalized)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(.black)
-                                        .padding(.horizontal, 13)
-                                        .padding(.vertical, 5)
-                                        .background(Color(type.capitalized))
-                                        .clipShape(.capsule)
+                                Text(pokemon.name!.capitalized)
+                                    .fontWeight(.bold)
+                                
+                                if pokemon.favorite {
+                                    Image(systemName: "star.fill")
+                                        .foregroundStyle(.yellow)
+                                }
+                                
+                                HStack {
+                                    ForEach(pokemon.types!, id: \.self) { type in
+                                        Text(type.capitalized)
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.black)
+                                            .padding(.horizontal, 13)
+                                            .padding(.vertical, 5)
+                                            .background(Color(type.capitalized))
+                                            .clipShape(.capsule)
+                                    }
                                 }
                             }
                         }
@@ -74,12 +85,20 @@ struct ContentView: View {
             .onChange(of: searchText) {
                 pokedex.nsPredicate = dynamicPredicate
             }
+            .onChange(of: filterByFavorites) {
+                pokedex.nsPredicate = dynamicPredicate
+            }
             .navigationDestination(for: Pokemon.self) {pokemon in
                 Text(pokemon.name ?? "no name")
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
+                    Button {
+                        filterByFavorites.toggle()
+                    } label: {
+                        Label("Filter by favorites", systemImage: filterByFavorites ? "star.fill" : "star")
+                    }
+                    .tint(.yellow)
                 }
                 ToolbarItem {
                     Button("Add Item", systemImage: "plus") {
